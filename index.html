@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IronLog – Workout Tracker</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand"><span class="logo">IL</span><span class="brand-name">IronLog</span></div>
+    <nav id="nav" aria-label="Main">
+      <button class="nav-item active" data-action="nav" data-view="dashboard"><span class="ico">▦</span><span>Dashboard</span></button>
+      <button class="nav-item" data-action="nav" data-view="workouts"><span class="ico">☰</span><span>Workouts</span></button>
+      <button class="nav-item" data-action="nav" data-view="progress"><span class="ico">↗</span><span>Progress</span></button>
+      <button class="nav-item" data-action="nav" data-view="records"><span class="ico">★</span><span>Records</span></button>
+      <button class="nav-item" data-action="nav" data-view="settings"><span class="ico">⚙</span><span>Settings</span></button>
+    </nav>
+    <button class="btn ghost theme-btn" data-action="theme">Toggle theme</button>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <h1 id="page-title">Dashboard</h1>
+      <button class="btn primary" data-action="add-workout">+ Add Workout</button>
+    </header>
+
+    <section id="view-dashboard" class="view"><div id="dashboard-body"></div></section>
+
+    <section id="view-workouts" class="view" hidden>
+      <div class="card toolbar">
+        <input id="search" type="search" placeholder="Search workout, exercise or muscle group" aria-label="Search workouts">
+        <select id="f-type" aria-label="Filter by workout type"></select>
+        <select id="f-muscle" aria-label="Filter by muscle group"></select>
+        <input id="f-date" type="date" aria-label="Filter by date">
+        <select id="f-sort" aria-label="Sort workouts">
+          <option value="newest">Newest first</option>
+          <option value="oldest">Oldest first</option>
+          <option value="high">Highest volume</option>
+          <option value="low">Lowest volume</option>
+        </select>
+        <button class="btn ghost" data-action="clear-filters">Reset</button>
+      </div>
+      <div id="workout-list"></div>
+    </section>
+
+    <section id="view-progress" class="view" hidden><div id="progress-body"></div></section>
+    <section id="view-records" class="view" hidden><div id="records-body"></div></section>
+
+    <section id="view-settings" class="view" hidden>
+      <div class="card settings">
+        <div class="setting"><div><h3>Theme</h3><p class="muted">Switch between light and dark mode.</p></div><button id="set-theme-btn" class="btn" data-action="theme"></button></div>
+        <div class="setting"><div><h3>Weight unit</h3><p class="muted">Totals, records and charts are shown in this unit.</p></div>
+          <select id="set-unit"><option value="kg">Kilograms (kg)</option><option value="lb">Pounds (lb)</option></select></div>
+        <div class="setting"><div><h3>Export data</h3><p class="muted">Download all workouts as a CSV file.</p></div><button class="btn" data-action="export">Export Data</button></div>
+        <div class="setting"><div><h3>Import data</h3><p class="muted">Add workouts from a CSV file. Existing workouts are kept.</p></div><button class="btn" data-action="import">Import Data</button></div>
+        <div class="setting"><div><h3>Clear all data</h3><p class="muted">Permanently delete every saved workout.</p></div><button class="btn danger" data-action="clear-all">Clear All Data</button></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<input id="import-file" type="file" accept=".csv,text/csv" hidden>
+
+<!-- Add / edit workout -->
+<div class="modal" id="modal-workout" hidden>
+  <div class="dialog wide" role="dialog" aria-modal="true" aria-labelledby="wf-title">
+    <div class="dialog-head"><h2 id="wf-title">Add workout</h2><button class="icon-btn" data-action="close-modal" aria-label="Close">✕</button></div>
+    <form id="workout-form" novalidate>
+      <div class="form-grid">
+        <label class="span2">Workout name<input id="w-name" type="text" maxlength="80" placeholder="Push Day"><small class="err" data-for="w-name"></small></label>
+        <label>Date<input id="w-date" type="date"><small class="err" data-for="w-date"></small></label>
+        <label>Workout type<select id="w-type"></select></label>
+        <label>Duration (minutes)<input id="w-duration" type="number" min="0" step="1" placeholder="60"><small class="err" data-for="w-duration"></small></label>
+        <label class="span2">Notes<textarea id="w-notes" rows="2" placeholder="How did it feel?"></textarea></label>
+      </div>
+
+      <h3 class="section-title">Exercises</h3>
+      <div id="ex-fields" class="exercise-box">
+        <div class="form-grid ex-grid">
+          <label class="span2">Exercise name<input id="ex-name" type="text" maxlength="80" placeholder="Bench Press"><small class="err" data-for="ex-name"></small></label>
+          <label>Muscle group<select id="ex-muscle"></select></label>
+          <label>Sets<input id="ex-sets" type="number" min="1" step="1" placeholder="4"><small class="err" data-for="ex-sets"></small></label>
+          <label>Reps<input id="ex-reps" type="number" min="1" step="1" placeholder="10"><small class="err" data-for="ex-reps"></small></label>
+          <label>Weight<input id="ex-weight" type="number" min="0" step="0.5" placeholder="50"><small class="err" data-for="ex-weight"></small></label>
+          <label>Unit<select id="ex-unit"><option value="kg">kg</option><option value="lb">lb</option></select></label>
+          <label>Rest (sec)<input id="ex-rest" type="number" min="0" step="5" placeholder="90"><small class="err" data-for="ex-rest"></small></label>
+          <label class="span2">Exercise notes<input id="ex-notes" type="text" maxlength="200"></label>
+        </div>
+        <div class="row-actions">
+          <button type="button" id="ex-submit" class="btn" data-action="ex-save">Add exercise</button>
+          <button type="button" id="ex-cancel" class="btn ghost" data-action="ex-cancel" hidden>Cancel edit</button>
+        </div>
+      </div>
+      <div id="ex-list"></div>
+
+      <div class="dialog-foot">
+        <button type="button" class="btn ghost" data-action="close-modal">Cancel</button>
+        <button type="submit" class="btn primary">Save workout</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Workout details -->
+<div class="modal" id="modal-view" hidden>
+  <div class="dialog wide" role="dialog" aria-modal="true" aria-label="Workout details">
+    <div class="dialog-head"><h2>Workout details</h2><button class="icon-btn" data-action="close-modal" aria-label="Close">✕</button></div>
+    <div id="view-body"></div>
+  </div>
+</div>
+
+<!-- Confirm -->
+<div class="modal" id="modal-confirm" hidden>
+  <div class="dialog small" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title">
+    <h2 id="confirm-title"></h2>
+    <p id="confirm-msg" class="muted"></p>
+    <div class="dialog-foot">
+      <button id="confirm-cancel" class="btn ghost" data-action="confirm-cancel">Cancel</button>
+      <button id="confirm-ok" class="btn danger" data-action="confirm-ok">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div id="toasts" aria-live="polite"></div>
+<script src="script.js"></script>
+</body>
+</html>
